@@ -1,9 +1,8 @@
 import {deepEqual} from 'fast-equals';
 import React, {useEffect, useMemo, useRef} from 'react';
-import * as ReportActionsUtils from '@libs/ReportActionsUtils';
+import useCurrentReportID from '@hooks/useCurrentReportID';
 import * as ReportUtils from '@libs/ReportUtils';
 import SidebarUtils from '@libs/SidebarUtils';
-import * as TransactionUtils from '@libs/TransactionUtils';
 import * as Report from '@userActions/Report';
 import CONST from '@src/CONST';
 import type {OptionData} from '@src/libs/ReportUtils';
@@ -27,21 +26,18 @@ function OptionRowLHNData({
     receiptTransactions,
     parentReportAction,
     transaction,
+    lastReportActionTransaction = {},
     transactionViolations,
     canUseViolations,
     ...propsToForward
 }: OptionRowLHNDataProps) {
     const reportID = propsToForward.reportID;
+    const currentReportIDValue = useCurrentReportID();
+    const isReportFocused = isFocused && currentReportIDValue?.currentReportID === reportID;
 
     const optionItemRef = useRef<OptionData>();
-    const linkedTransaction = useMemo(() => {
-        const sortedReportActions = ReportActionsUtils.getSortedReportActionsForDisplay(reportActions);
-        const lastReportAction = sortedReportActions[0];
-        return TransactionUtils.getLinkedTransaction(lastReportAction);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fullReport?.reportID, receiptTransactions, reportActions]);
 
-    const hasViolations = canUseViolations && ReportUtils.doesTransactionThreadHaveViolations(fullReport, transactionViolations, parentReportAction ?? null);
+    const shouldDisplayViolations = canUseViolations && ReportUtils.shouldDisplayTransactionThreadViolations(fullReport, transactionViolations, parentReportAction ?? null);
 
     const optionItem = useMemo(() => {
         // Note: ideally we'd have this as a dependent selector in onyx!
@@ -52,7 +48,7 @@ function OptionRowLHNData({
             preferredLocale: preferredLocale ?? CONST.LOCALES.DEFAULT,
             policy,
             parentReportAction,
-            hasViolations: !!hasViolations,
+            hasViolations: !!shouldDisplayViolations,
         });
         if (deepEqual(item, optionItemRef.current)) {
             return optionItemRef.current;
@@ -64,7 +60,19 @@ function OptionRowLHNData({
         // Listen parentReportAction to update title of thread report when parentReportAction changed
         // Listen to transaction to update title of transaction report when transaction changed
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [fullReport, linkedTransaction, reportActions, personalDetails, preferredLocale, policy, parentReportAction, transaction, transactionViolations, canUseViolations]);
+    }, [
+        fullReport,
+        lastReportActionTransaction,
+        reportActions,
+        personalDetails,
+        preferredLocale,
+        policy,
+        parentReportAction,
+        transaction,
+        transactionViolations,
+        canUseViolations,
+        receiptTransactions,
+    ]);
 
     useEffect(() => {
         if (!optionItem || !!optionItem.hasDraftComment || !comment || comment.length <= 0 || isFocused) {
@@ -78,7 +86,7 @@ function OptionRowLHNData({
         <OptionRowLHN
             // eslint-disable-next-line react/jsx-props-no-spreading
             {...propsToForward}
-            isFocused={isFocused}
+            isFocused={isReportFocused}
             optionItem={optionItem}
         />
     );

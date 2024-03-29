@@ -1,13 +1,15 @@
+import {useRoute} from '@react-navigation/native';
+import type {FlashListProps} from '@shopify/flash-list';
 import {FlashList} from '@shopify/flash-list';
 import type {ReactElement} from 'react';
-import React, {useCallback} from 'react';
+import React, {memo, useCallback, useContext, useEffect, useMemo, useRef} from 'react';
 import {StyleSheet, View} from 'react-native';
 import {withOnyx} from 'react-native-onyx';
-import withCurrentReportID from '@components/withCurrentReportID';
+import {ScrollOffsetContext} from '@components/ScrollOffsetContextProvider';
 import usePermissions from '@hooks/usePermissions';
+import usePrevious from '@hooks/usePrevious';
 import useThemeStyles from '@hooks/useThemeStyles';
-import * as OptionsListUtils from '@libs/OptionsListUtils';
-import * as ReportUtils from '@libs/ReportUtils';
+import * as ReportActionsUtils from '@libs/ReportActionsUtils';
 import variables from '@styles/variables';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
@@ -29,12 +31,29 @@ function LHNOptionsList({
     preferredLocale = CONST.LOCALES.DEFAULT,
     personalDetails = {},
     transactions = {},
-    currentReportID = '',
     draftComments = {},
     transactionViolations = {},
+    onFirstItemRendered = () => {},
 }: LHNOptionsListProps) {
+    const {saveScrollOffset, getScrollOffset} = useContext(ScrollOffsetContext);
+    const flashListRef = useRef<FlashList<string>>(null);
+    const route = useRoute();
+
     const styles = useThemeStyles();
     const {canUseViolations} = usePermissions();
+
+    // When the first item renders we want to call the onFirstItemRendered callback.
+    // At this point in time we know that the list is actually displaying items.
+    const hasCalledOnLayout = React.useRef(false);
+    const onLayoutItem = useCallback(() => {
+        if (hasCalledOnLayout.current) {
+            return;
+        }
+        hasCalledOnLayout.current = true;
+
+        onFirstItemRendered();
+    }, [onFirstItemRendered]);
+
     /**
      * Function which renders a row in the list
      */
@@ -48,8 +67,16 @@ function LHNOptionsList({
             const transactionID = itemParentReportAction?.actionName === CONST.REPORT.ACTIONS.TYPE.IOU ? itemParentReportAction.originalMessage.IOUTransactionID ?? '' : '';
             const itemTransaction = transactions?.[`${ONYXKEYS.COLLECTION.TRANSACTION}${transactionID}`] ?? null;
             const itemComment = draftComments?.[`${ONYXKEYS.COLLECTION.REPORT_DRAFT_COMMENT}${reportID}`] ?? '';
-            const participants = [...ReportUtils.getParticipantsIDs(itemFullReport), itemFullReport?.ownerAccountID, itemParentReportAction?.actorAccountID];
-            const participantsPersonalDetails = OptionsListUtils.getPersonalDetailsForAccountIDs(participants, personalDetails);
+            const sortedReportActions = ReportActionsUtils.getSortedReportActionsForDisplay(itemReportActions);
+            const lastReportAction = sortedReportActions[0];
+
+            // Get the transaction for the last report action
+            let lastReportActionTransactionID = '';
+
+            if (lastReportAction?.actionName === CONST.REPORT.ACTIONS.TYPE.IOU) {
+                lastReportActionTransactionID = lastReportAction.originalMessage?.IOUTransactionID ?? '';
+            }
+            const lastReportActionTransaction = transactions?.[`${ONYXKEYS.COLLECTION.TRANSACTION}${lastReportActionTransactionID}`] ?? {};
 
             return (
                 <OptionRowLHNData
@@ -58,22 +85,22 @@ function LHNOptionsList({
                     reportActions={itemReportActions}
                     parentReportAction={itemParentReportAction}
                     policy={itemPolicy}
-                    // @ts-expect-error TODO: Remove this once OptionsListUtils (https://github.com/Expensify/App/issues/24921) is migrated to TypeScript.
-                    personalDetails={participantsPersonalDetails}
+                    personalDetails={personalDetails ?? {}}
                     transaction={itemTransaction}
+                    lastReportActionTransaction={lastReportActionTransaction}
                     receiptTransactions={transactions}
                     viewMode={optionMode}
-                    isFocused={!shouldDisableFocusOptions && reportID === currentReportID}
+                    isFocused={!shouldDisableFocusOptions}
                     onSelectRow={onSelectRow}
                     preferredLocale={preferredLocale}
                     comment={itemComment}
                     transactionViolations={transactionViolations}
                     canUseViolations={canUseViolations}
+                    onLayout={onLayoutItem}
                 />
             );
         },
         [
-            currentReportID,
             draftComments,
             onSelectRow,
             optionMode,
@@ -86,12 +113,59 @@ function LHNOptionsList({
             transactions,
             transactionViolations,
             canUseViolations,
+            onLayoutItem,
         ],
     );
+
+    const extraData = useMemo(() => [reportActions, reports, policy, personalDetails, data.length], [reportActions, reports, policy, personalDetails, data.length]);
+
+    const previousOptionMode = usePrevious(optionMode);
+
+    useEffect(() => {
+        if (previousOptionMode === null || previousOptionMode === optionMode || !flashListRef.current) {
+            return;
+        }
+
+        if (!flashListRef.current) {
+            return;
+        }
+
+        // If the option mode changes want to scroll to the top of the list because rendered items will have different height.
+        flashListRef.current.scrollToOffset({offset: 0});
+    }, [previousOptionMode, optionMode]);
+
+    const onScroll = useCallback<NonNullable<FlashListProps<string>['onScroll']>>(
+        (e) => {
+            // If the layout measurement is 0, it means the flashlist is not displayed but the onScroll may be triggered with offset value 0.
+            // We should ignore this case.
+            if (e.nativeEvent.layoutMeasurement.height === 0) {
+                return;
+            }
+            saveScrollOffset(route, e.nativeEvent.contentOffset.y);
+        },
+        [route, saveScrollOffset],
+    );
+
+    const onLayout = useCallback(() => {
+        const offset = getScrollOffset(route);
+
+        if (!(offset && flashListRef.current)) {
+            return;
+        }
+
+        // We need to use requestAnimationFrame to make sure it will scroll properly on iOS.
+        requestAnimationFrame(() => {
+            if (!(offset && flashListRef.current)) {
+                return;
+            }
+            flashListRef.current.scrollToOffset({offset});
+        });
+    }, [route, flashListRef, getScrollOffset]);
 
     return (
         <View style={style ?? styles.flex1}>
             <FlashList
+                ref={flashListRef}
                 indicatorStyle="white"
                 keyboardShouldPersistTaps="always"
                 contentContainerStyle={StyleSheet.flatten(contentContainerStyles)}
@@ -100,8 +174,10 @@ function LHNOptionsList({
                 keyExtractor={keyExtractor}
                 renderItem={renderItem}
                 estimatedItemSize={optionMode === CONST.OPTION_MODE.COMPACT ? variables.optionRowHeightCompact : variables.optionRowHeight}
-                extraData={[currentReportID]}
+                extraData={extraData}
                 showsVerticalScrollIndicator={false}
+                onLayout={onLayout}
+                onScroll={onScroll}
             />
         </View>
     );
@@ -109,33 +185,31 @@ function LHNOptionsList({
 
 LHNOptionsList.displayName = 'LHNOptionsList';
 
-export default withCurrentReportID(
-    withOnyx<LHNOptionsListProps, LHNOptionsListOnyxProps>({
-        reports: {
-            key: ONYXKEYS.COLLECTION.REPORT,
-        },
-        reportActions: {
-            key: ONYXKEYS.COLLECTION.REPORT_ACTIONS,
-        },
-        policy: {
-            key: ONYXKEYS.COLLECTION.POLICY,
-        },
-        preferredLocale: {
-            key: ONYXKEYS.NVP_PREFERRED_LOCALE,
-        },
-        personalDetails: {
-            key: ONYXKEYS.PERSONAL_DETAILS_LIST,
-        },
-        transactions: {
-            key: ONYXKEYS.COLLECTION.TRANSACTION,
-        },
-        draftComments: {
-            key: ONYXKEYS.COLLECTION.REPORT_DRAFT_COMMENT,
-        },
-        transactionViolations: {
-            key: ONYXKEYS.COLLECTION.TRANSACTION_VIOLATIONS,
-        },
-    })(LHNOptionsList),
-);
+export default withOnyx<LHNOptionsListProps, LHNOptionsListOnyxProps>({
+    reports: {
+        key: ONYXKEYS.COLLECTION.REPORT,
+    },
+    reportActions: {
+        key: ONYXKEYS.COLLECTION.REPORT_ACTIONS,
+    },
+    policy: {
+        key: ONYXKEYS.COLLECTION.POLICY,
+    },
+    preferredLocale: {
+        key: ONYXKEYS.NVP_PREFERRED_LOCALE,
+    },
+    personalDetails: {
+        key: ONYXKEYS.PERSONAL_DETAILS_LIST,
+    },
+    transactions: {
+        key: ONYXKEYS.COLLECTION.TRANSACTION,
+    },
+    draftComments: {
+        key: ONYXKEYS.COLLECTION.REPORT_DRAFT_COMMENT,
+    },
+    transactionViolations: {
+        key: ONYXKEYS.COLLECTION.TRANSACTION_VIOLATIONS,
+    },
+})(memo(LHNOptionsList));
 
 export type {LHNOptionsListProps};

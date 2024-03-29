@@ -1,4 +1,3 @@
-import {View} from 'react-native';
 import Onyx from 'react-native-onyx';
 import _ from 'underscore';
 import CONST from '../../src/CONST';
@@ -138,6 +137,7 @@ describe('OptionsListUtils', () => {
             accountID: 1,
             displayName: 'Mister Fantastic',
             login: 'reedrichards@expensify.com',
+            isSelected: true,
         },
         2: {
             accountID: 2,
@@ -721,6 +721,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food',
                         tooltipText: 'Food',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '    Meat',
@@ -728,6 +729,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Meat',
                         tooltipText: 'Meat',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Restaurant',
@@ -735,6 +737,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Restaurant',
                         tooltipText: 'Restaurant',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -751,6 +754,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food',
                         tooltipText: 'Food',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Food: Meat',
@@ -758,6 +762,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Meat',
                         tooltipText: 'Food: Meat',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -840,6 +845,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Medical',
                         tooltipText: 'Medical',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -854,6 +860,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Restaurant',
                         tooltipText: 'Restaurant',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -868,6 +875,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Cars',
                         tooltipText: 'Cars',
                         isDisabled: true,
+                        isSelected: false,
                     },
                     {
                         text: '    Audi',
@@ -875,6 +883,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Cars: Audi',
                         tooltipText: 'Audi',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '    Mercedes-Benz',
@@ -882,6 +891,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Cars: Mercedes-Benz',
                         tooltipText: 'Mercedes-Benz',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Food',
@@ -889,6 +899,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food',
                         tooltipText: 'Food',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '    Meat',
@@ -896,6 +907,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Meat',
                         tooltipText: 'Meat',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '    Milk',
@@ -903,6 +915,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Milk',
                         tooltipText: 'Milk',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Restaurant',
@@ -910,6 +923,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Restaurant',
                         tooltipText: 'Restaurant',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Travel',
@@ -917,6 +931,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Travel',
                         tooltipText: 'Travel',
                         isDisabled: true,
+                        isSelected: false,
                     },
                     {
                         text: '    Meals',
@@ -924,6 +939,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Travel: Meals',
                         tooltipText: 'Meals',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '        Breakfast',
@@ -931,6 +947,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Travel: Meals: Breakfast',
                         tooltipText: 'Breakfast',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: '        Lunch',
@@ -938,6 +955,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Travel: Meals: Lunch',
                         tooltipText: 'Lunch',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -954,6 +972,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food',
                         tooltipText: 'Food',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Food: Meat',
@@ -961,6 +980,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Meat',
                         tooltipText: 'Food: Meat',
                         isDisabled: false,
+                        isSelected: false,
                     },
                     {
                         text: 'Food: Milk',
@@ -968,6 +988,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Food: Milk',
                         tooltipText: 'Food: Milk',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -993,6 +1014,7 @@ describe('OptionsListUtils', () => {
                         searchText: 'Medical',
                         tooltipText: 'Medical',
                         isDisabled: false,
+                        isSelected: false,
                     },
                 ],
             },
@@ -1439,6 +1461,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Meals',
                 tooltipText: 'Meals',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Restaurant',
@@ -1446,6 +1469,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Restaurant',
                 tooltipText: 'Restaurant',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Food',
@@ -1453,6 +1477,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food',
                 tooltipText: 'Food',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '    Meat',
@@ -1460,6 +1485,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food: Meat',
                 tooltipText: 'Meat',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '    Milk',
@@ -1467,6 +1493,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food: Milk',
                 tooltipText: 'Milk',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Cars',
@@ -1474,6 +1501,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Cars',
                 tooltipText: 'Cars',
                 isDisabled: true,
+                isSelected: false,
             },
             {
                 text: '    Audi',
@@ -1481,6 +1509,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Cars: Audi',
                 tooltipText: 'Audi',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '    Mercedes-Benz',
@@ -1488,6 +1517,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Cars: Mercedes-Benz',
                 tooltipText: 'Mercedes-Benz',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Travel',
@@ -1495,6 +1525,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel',
                 tooltipText: 'Travel',
                 isDisabled: true,
+                isSelected: false,
             },
             {
                 text: '    Meals',
@@ -1502,6 +1533,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals',
                 tooltipText: 'Meals',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '        Breakfast',
@@ -1509,6 +1541,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals: Breakfast',
                 tooltipText: 'Breakfast',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '        Lunch',
@@ -1516,6 +1549,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals: Lunch',
                 tooltipText: 'Lunch',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Plain',
@@ -1523,6 +1557,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Plain',
                 tooltipText: 'Plain',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Audi',
@@ -1530,6 +1565,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Audi',
                 tooltipText: 'Audi',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Health',
@@ -1537,6 +1573,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Health',
                 tooltipText: 'Health',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'A',
@@ -1544,6 +1581,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A',
                 tooltipText: 'A',
                 isDisabled: true,
+                isSelected: false,
             },
             {
                 text: '    B',
@@ -1551,6 +1589,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B',
                 tooltipText: 'B',
                 isDisabled: true,
+                isSelected: false,
             },
             {
                 text: '        C',
@@ -1558,6 +1597,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B: C',
                 tooltipText: 'C',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: '            D',
@@ -1565,6 +1605,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B: C: D',
                 tooltipText: 'D',
                 isDisabled: true,
+                isSelected: false,
             },
             {
                 text: '                E',
@@ -1572,6 +1613,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B: C: D: E',
                 tooltipText: 'E',
                 isDisabled: false,
+                isSelected: false,
             },
         ];
         const resultOneLine = [
@@ -1581,6 +1623,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Meals',
                 tooltipText: 'Meals',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Restaurant',
@@ -1588,6 +1631,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Restaurant',
                 tooltipText: 'Restaurant',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Food',
@@ -1595,6 +1639,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food',
                 tooltipText: 'Food',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Food: Meat',
@@ -1602,6 +1647,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food: Meat',
                 tooltipText: 'Food: Meat',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Food: Milk',
@@ -1609,6 +1655,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Food: Milk',
                 tooltipText: 'Food: Milk',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Cars: Audi',
@@ -1616,6 +1663,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Cars: Audi',
                 tooltipText: 'Cars: Audi',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Cars: Mercedes-Benz',
@@ -1623,6 +1671,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Cars: Mercedes-Benz',
                 tooltipText: 'Cars: Mercedes-Benz',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Travel: Meals',
@@ -1630,6 +1679,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals',
                 tooltipText: 'Travel: Meals',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Travel: Meals: Breakfast',
@@ -1637,6 +1687,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals: Breakfast',
                 tooltipText: 'Travel: Meals: Breakfast',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Travel: Meals: Lunch',
@@ -1644,6 +1695,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Travel: Meals: Lunch',
                 tooltipText: 'Travel: Meals: Lunch',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Plain',
@@ -1651,6 +1703,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Plain',
                 tooltipText: 'Plain',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Audi',
@@ -1658,6 +1711,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Audi',
                 tooltipText: 'Audi',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'Health',
@@ -1665,6 +1719,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'Health',
                 tooltipText: 'Health',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'A: B: C',
@@ -1672,6 +1727,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B: C',
                 tooltipText: 'A: B: C',
                 isDisabled: false,
+                isSelected: false,
             },
             {
                 text: 'A: B: C: D: E',
@@ -1679,6 +1735,7 @@ describe('OptionsListUtils', () => {
                 searchText: 'A: B: C: D: E',
                 tooltipText: 'A: B: C: D: E',
                 isDisabled: false,
+                isSelected: false,
             },
         ];
 
@@ -2001,12 +2058,236 @@ describe('OptionsListUtils', () => {
         expect(OptionsListUtils.sortCategories(categoriesIncorrectOrdering3)).toStrictEqual(result3);
     });
 
+    it('sortTags', () => {
+        const createTagObjects = (names) => _.map(names, (name) => ({name, enabled: true}));
+
+        const unorderedTagNames = ['10bc', 'b', '0a', '1', '中国', 'b10', '!', '2', '0', '@', 'a1', 'a', '3', 'b1', '日本', '$', '20', '20a', '#', 'a20', 'c', '10'];
+        const expectedOrderNames = ['!', '#', '$', '0', '0a', '1', '10', '10bc', '2', '20', '20a', '3', '@', 'a', 'a1', 'a20', 'b', 'b1', 'b10', 'c', '中国', '日本'];
+        const unorderedTags = createTagObjects(unorderedTagNames);
+        const expectedOrder = createTagObjects(expectedOrderNames);
+        expect(OptionsListUtils.sortTags(unorderedTags)).toStrictEqual(expectedOrder);
+
+        const unorderedTagNames2 = ['0', 'a1', '1', 'b1', '3', '10', 'b10', 'a', '2', 'c', '20', 'a20', 'b'];
+        const expectedOrderNames2 = ['0', '1', '10', '2', '20', '3', 'a', 'a1', 'a20', 'b', 'b1', 'b10', 'c'];
+        const unorderedTags2 = createTagObjects(unorderedTagNames2);
+        const expectedOrder2 = createTagObjects(expectedOrderNames2);
+        expect(OptionsListUtils.sortTags(unorderedTags2)).toStrictEqual(expectedOrder2);
+
+        const unorderedTagNames3 = [
+            '61',
+            '39',
+            '97',
+            '93',
+            '77',
+            '71',
+            '22',
+            '27',
+            '30',
+            '64',
+            '91',
+            '24',
+            '33',
+            '60',
+            '21',
+            '85',
+            '59',
+            '76',
+            '42',
+            '67',
+            '13',
+            '96',
+            '84',
+            '44',
+            '68',
+            '31',
+            '62',
+            '87',
+            '50',
+            '4',
+            '100',
+            '12',
+            '28',
+            '49',
+            '53',
+            '5',
+            '45',
+            '14',
+            '55',
+            '78',
+            '11',
+            '35',
+            '75',
+            '18',
+            '9',
+            '80',
+            '54',
+            '2',
+            '34',
+            '48',
+            '81',
+            '6',
+            '73',
+            '15',
+            '98',
+            '25',
+            '8',
+            '99',
+            '17',
+            '90',
+            '47',
+            '1',
+            '10',
+            '38',
+            '66',
+            '57',
+            '23',
+            '86',
+            '29',
+            '3',
+            '65',
+            '74',
+            '19',
+            '56',
+            '63',
+            '20',
+            '7',
+            '32',
+            '46',
+            '70',
+            '26',
+            '16',
+            '83',
+            '37',
+            '58',
+            '43',
+            '36',
+            '69',
+            '79',
+            '72',
+            '41',
+            '94',
+            '95',
+            '82',
+            '51',
+            '52',
+            '89',
+            '88',
+            '40',
+            '92',
+        ];
+        const expectedOrderNames3 = [
+            '1',
+            '10',
+            '100',
+            '11',
+            '12',
+            '13',
+            '14',
+            '15',
+            '16',
+            '17',
+            '18',
+            '19',
+            '2',
+            '20',
+            '21',
+            '22',
+            '23',
+            '24',
+            '25',
+            '26',
+            '27',
+            '28',
+            '29',
+            '3',
+            '30',
+            '31',
+            '32',
+            '33',
+            '34',
+            '35',
+            '36',
+            '37',
+            '38',
+            '39',
+            '4',
+            '40',
+            '41',
+            '42',
+            '43',
+            '44',
+            '45',
+            '46',
+            '47',
+            '48',
+            '49',
+            '5',
+            '50',
+            '51',
+            '52',
+            '53',
+            '54',
+            '55',
+            '56',
+            '57',
+            '58',
+            '59',
+            '6',
+            '60',
+            '61',
+            '62',
+            '63',
+            '64',
+            '65',
+            '66',
+            '67',
+            '68',
+            '69',
+            '7',
+            '70',
+            '71',
+            '72',
+            '73',
+            '74',
+            '75',
+            '76',
+            '77',
+            '78',
+            '79',
+            '8',
+            '80',
+            '81',
+            '82',
+            '83',
+            '84',
+            '85',
+            '86',
+            '87',
+            '88',
+            '89',
+            '9',
+            '90',
+            '91',
+            '92',
+            '93',
+            '94',
+            '95',
+            '96',
+            '97',
+            '98',
+            '99',
+        ];
+        const unorderedTags3 = createTagObjects(unorderedTagNames3);
+        const expectedOrder3 = createTagObjects(expectedOrderNames3);
+        expect(OptionsListUtils.sortTags(unorderedTags3)).toStrictEqual(expectedOrder3);
+    });
+
     it('getFilteredOptions() for taxRate', () => {
         const search = 'rate';
         const emptySearch = '';
         const wrongSearch = 'bla bla';
 
-        const policyTaxRatesWithDefault = {
+        const taxRatesWithDefault = {
             name: 'Tax',
             defaultExternalID: 'CODE1',
             defaultValue: '0%',
@@ -2113,38 +2394,19 @@ describe('OptionsListUtils', () => {
             },
         ];
 
-        const result = OptionsListUtils.getFilteredOptions({}, {}, [], emptySearch, [], [], false, false, false, {}, [], false, {}, [], false, false, true, policyTaxRatesWithDefault);
+        const result = OptionsListUtils.getFilteredOptions({}, {}, [], emptySearch, [], [], false, false, false, {}, [], false, {}, [], false, false, true, taxRatesWithDefault);
 
-        expect(result.policyTaxRatesOptions).toStrictEqual(resultList);
+        expect(result.taxRatesOptions).toStrictEqual(resultList);
 
-        const searchResult = OptionsListUtils.getFilteredOptions({}, {}, [], search, [], [], false, false, false, {}, [], false, {}, [], false, false, true, policyTaxRatesWithDefault);
-        expect(searchResult.policyTaxRatesOptions).toStrictEqual(searchResultList);
+        const searchResult = OptionsListUtils.getFilteredOptions({}, {}, [], search, [], [], false, false, false, {}, [], false, {}, [], false, false, true, taxRatesWithDefault);
+        expect(searchResult.taxRatesOptions).toStrictEqual(searchResultList);
 
-        const wrongSearchResult = OptionsListUtils.getFilteredOptions(
-            {},
-            {},
-            [],
-            wrongSearch,
-            [],
-            [],
-            false,
-            false,
-            false,
-            {},
-            [],
-            false,
-            {},
-            [],
-            false,
-            false,
-            true,
-            policyTaxRatesWithDefault,
-        );
-        expect(wrongSearchResult.policyTaxRatesOptions).toStrictEqual(wrongSearchResultList);
+        const wrongSearchResult = OptionsListUtils.getFilteredOptions({}, {}, [], wrongSearch, [], [], false, false, false, {}, [], false, {}, [], false, false, true, taxRatesWithDefault);
+        expect(wrongSearchResult.taxRatesOptions).toStrictEqual(wrongSearchResultList);
     });
 
     it('formatMemberForList()', () => {
-        const formattedMembers = _.map(PERSONAL_DETAILS, (personalDetail, key) => OptionsListUtils.formatMemberForList(personalDetail, {isSelected: key === '1'}));
+        const formattedMembers = _.map(PERSONAL_DETAILS, (personalDetail) => OptionsListUtils.formatMemberForList(personalDetail));
 
         // We're only formatting items inside the array, so the order should be the same as the original PERSONAL_DETAILS array
         expect(formattedMembers[0].text).toBe('Mister Fantastic');
@@ -2159,12 +2421,5 @@ describe('OptionsListUtils', () => {
 
         // `isDisabled` is always false
         expect(_.every(formattedMembers, (personalDetail) => !personalDetail.isDisabled)).toBe(true);
-
-        // `rightElement` is always null
-        expect(_.every(formattedMembers, (personalDetail) => personalDetail.rightElement === null)).toBe(true);
-
-        // Passing a config should override the other keys
-        const formattedMembersWithRightElement = _.map(PERSONAL_DETAILS, (personalDetail) => OptionsListUtils.formatMemberForList(personalDetail, {rightElement: <View />}));
-        expect(_.every(formattedMembersWithRightElement, (personalDetail) => Boolean(personalDetail.rightElement))).toBe(true);
     });
 });

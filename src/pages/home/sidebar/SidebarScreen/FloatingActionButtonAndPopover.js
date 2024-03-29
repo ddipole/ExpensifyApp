@@ -1,23 +1,27 @@
 import PropTypes from 'prop-types';
-import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {View} from 'react-native';
 import {withOnyx} from 'react-native-onyx';
+import _ from 'underscore';
 import FloatingActionButton from '@components/FloatingActionButton';
 import * as Expensicons from '@components/Icon/Expensicons';
 import PopoverMenu from '@components/PopoverMenu';
-import withLocalize, {withLocalizePropTypes} from '@components/withLocalize';
 import withNavigation from '@components/withNavigation';
 import withNavigationFocus from '@components/withNavigationFocus';
-import withWindowDimensions from '@components/withWindowDimensions';
+import withWindowDimensions, {windowDimensionsPropTypes} from '@components/withWindowDimensions';
+import useLocalize from '@hooks/useLocalize';
+import usePermissions from '@hooks/usePermissions';
 import usePrevious from '@hooks/usePrevious';
 import useThemeStyles from '@hooks/useThemeStyles';
 import compose from '@libs/compose';
+import interceptAnonymousUser from '@libs/interceptAnonymousUser';
 import Navigation from '@libs/Navigation/Navigation';
 import * as ReportUtils from '@libs/ReportUtils';
+import personalDetailsPropType from '@pages/personalDetailsPropType';
 import * as App from '@userActions/App';
 import * as IOU from '@userActions/IOU';
 import * as Policy from '@userActions/Policy';
-import * as Session from '@userActions/Session';
+import * as Report from '@userActions/Report';
 import * as Task from '@userActions/Task';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
@@ -35,8 +39,52 @@ const policySelector = (policy) =>
         pendingAction: policy.pendingAction,
     };
 
+const getQuickActionIcon = (action) => {
+    switch (action) {
+        case CONST.QUICK_ACTIONS.REQUEST_MANUAL:
+            return Expensicons.MoneyCircle;
+        case CONST.QUICK_ACTIONS.REQUEST_SCAN:
+            return Expensicons.Receipt;
+        case CONST.QUICK_ACTIONS.REQUEST_DISTANCE:
+            return Expensicons.Car;
+        case CONST.QUICK_ACTIONS.SPLIT_MANUAL:
+        case CONST.QUICK_ACTIONS.SPLIT_SCAN:
+        case CONST.QUICK_ACTIONS.SPLIT_DISTANCE:
+            return Expensicons.Transfer;
+        case CONST.QUICK_ACTIONS.SEND_MONEY:
+            return Expensicons.Send;
+        case CONST.QUICK_ACTIONS.ASSIGN_TASK:
+            return Expensicons.Task;
+        default:
+            return Expensicons.MoneyCircle;
+    }
+};
+
+const getQuickActionTitle = (action) => {
+    switch (action) {
+        case CONST.QUICK_ACTIONS.REQUEST_MANUAL:
+            return 'quickAction.requestMoney';
+        case CONST.QUICK_ACTIONS.REQUEST_SCAN:
+            return 'quickAction.scanReceipt';
+        case CONST.QUICK_ACTIONS.REQUEST_DISTANCE:
+            return 'quickAction.recordDistance';
+        case CONST.QUICK_ACTIONS.SPLIT_MANUAL:
+            return 'quickAction.splitBill';
+        case CONST.QUICK_ACTIONS.SPLIT_SCAN:
+            return 'quickAction.splitScan';
+        case CONST.QUICK_ACTIONS.SPLIT_DISTANCE:
+            return 'quickAction.splitDistance';
+        case CONST.QUICK_ACTIONS.SEND_MONEY:
+            return 'quickAction.sendMoney';
+        case CONST.QUICK_ACTIONS.ASSIGN_TASK:
+            return 'quickAction.assignTask';
+        default:
+            return '';
+    }
+};
+
 const propTypes = {
-    ...withLocalizePropTypes,
+    ...windowDimensionsPropTypes,
 
     /* Callback function when the menu is shown */
     onShowCreateMenu: PropTypes.func,
@@ -55,6 +103,22 @@ const propTypes = {
 
     /** Forwarded ref to FloatingActionButtonAndPopover */
     innerRef: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
+
+    /** Information on the last taken action to display as Quick Action */
+    quickAction: PropTypes.shape({
+        action: PropTypes.string,
+        chatReportID: PropTypes.string,
+        targetAccountID: PropTypes.number,
+        isFirstQuickAction: PropTypes.bool,
+    }),
+
+    /** Personal details of all the users */
+    personalDetails: personalDetailsPropType,
+
+    session: PropTypes.shape({
+        /** Currently logged in user accountID */
+        accountID: PropTypes.number,
+    }).isRequired,
 };
 const defaultProps = {
     onHideCreateMenu: () => {},
@@ -62,6 +126,8 @@ const defaultProps = {
     allPolicies: {},
     isLoading: false,
     innerRef: null,
+    quickAction: null,
+    personalDetails: {},
 };
 
 /**
@@ -72,11 +138,53 @@ const defaultProps = {
  */
 function FloatingActionButtonAndPopover(props) {
     const styles = useThemeStyles();
+    const {translate} = useLocalize();
     const [isCreateMenuActive, setIsCreateMenuActive] = useState(false);
-    const isAnonymousUser = Session.isAnonymousUser();
-    const anchorRef = useRef(null);
+    const fabRef = useRef(null);
+    const {canUseTrackExpense} = usePermissions();
 
     const prevIsFocused = usePrevious(props.isFocused);
+
+    const quickActionReport = useMemo(() => (props.quickAction ? ReportUtils.getReport(props.quickAction.chatReportID) : 0), [props.quickAction]);
+
+    const quickActionAvatars = useMemo(() => {
+        if (quickActionReport) {
+            const avatars = ReportUtils.getIcons(quickActionReport, props.personalDetails);
+            return avatars.length <= 1 || ReportUtils.isPolicyExpenseChat(quickActionReport) ? avatars : _.filter(avatars, (avatar) => avatar.id !== props.session.accountID);
+        }
+        return [];
+    }, [props.personalDetails, props.session.accountID, quickActionReport]);
+
+    const navigateToQuickAction = () => {
+        switch (props.quickAction.action) {
+            case CONST.QUICK_ACTIONS.REQUEST_MANUAL:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.REQUEST, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.MANUAL);
+                return;
+            case CONST.QUICK_ACTIONS.REQUEST_SCAN:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.REQUEST, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.SCAN);
+                return;
+            case CONST.QUICK_ACTIONS.REQUEST_DISTANCE:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.REQUEST, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.DISTANCE);
+                return;
+            case CONST.QUICK_ACTIONS.SPLIT_MANUAL:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.SPLIT, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.MANUAL);
+                return;
+            case CONST.QUICK_ACTIONS.SPLIT_SCAN:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.SPLIT, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.SCAN);
+                return;
+            case CONST.QUICK_ACTIONS.SPLIT_DISTANCE:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.SPLIT, props.quickAction.chatReportID, CONST.IOU.REQUEST_TYPE.DISTANCE);
+                return;
+            case CONST.QUICK_ACTIONS.SEND_MONEY:
+                IOU.startMoneyRequest(CONST.IOU.TYPE.SEND, props.quickAction.chatReportID);
+                return;
+            case CONST.QUICK_ACTIONS.ASSIGN_TASK:
+                Task.clearOutTaskInfoAndNavigate(props.quickAction.chatReportID, quickActionReport, _.get(props.quickAction, 'targetAccountID', 0));
+                return;
+            default:
+                return '';
+        }
+    };
 
     /**
      * Check if LHN status changed from active to inactive.
@@ -124,20 +232,6 @@ function FloatingActionButtonAndPopover(props) {
         [isCreateMenuActive],
     );
 
-    /**
-     * Checks if user is anonymous. If true, shows the sign in modal, else,
-     * executes the callback.
-     *
-     * @param {Function} callback
-     */
-    const interceptAnonymousUser = (callback) => {
-        if (isAnonymousUser) {
-            Session.signOutAndRedirectToSignIn();
-        } else {
-            callback();
-        }
-    };
-
     useEffect(() => {
         if (!didScreenBecomeInactive()) {
             return;
@@ -153,8 +247,16 @@ function FloatingActionButtonAndPopover(props) {
         },
     }));
 
+    const toggleCreateMenu = () => {
+        if (isCreateMenuActive) {
+            hideCreateMenu();
+        } else {
+            showCreateMenu();
+        }
+    };
+
     return (
-        <View>
+        <View style={styles.flexGrow1}>
             <PopoverMenu
                 onClose={hideCreateMenu}
                 isVisible={isCreateMenuActive && (!props.isSmallScreenWidth || props.isFocused)}
@@ -164,39 +266,63 @@ function FloatingActionButtonAndPopover(props) {
                 menuItems={[
                     {
                         icon: Expensicons.ChatBubble,
-                        text: props.translate('sidebarScreen.fabNewChat'),
-                        onSelected: () => interceptAnonymousUser(() => Navigation.navigate(ROUTES.NEW)),
+                        text: translate('sidebarScreen.fabNewChat'),
+                        onSelected: () => interceptAnonymousUser(Report.startNewChat),
                     },
                     {
                         icon: Expensicons.MoneyCircle,
-                        text: props.translate('iou.requestMoney'),
+                        text: translate('iou.requestMoney'),
                         onSelected: () =>
                             interceptAnonymousUser(() =>
-                                Navigation.navigate(
+                                IOU.startMoneyRequest(
+                                    CONST.IOU.TYPE.REQUEST,
                                     // When starting to create a money request from the global FAB, there is not an existing report yet. A random optimistic reportID is generated and used
                                     // for all of the routes in the creation flow.
-                                    ROUTES.MONEY_REQUEST_CREATE.getRoute(CONST.IOU.TYPE.REQUEST, CONST.IOU.OPTIMISTIC_TRANSACTION_ID, ReportUtils.generateReportID()),
+                                    ReportUtils.generateReportID(),
                                 ),
                             ),
                     },
                     {
                         icon: Expensicons.Send,
-                        text: props.translate('iou.sendMoney'),
-                        onSelected: () => interceptAnonymousUser(() => IOU.startMoneyRequest(CONST.IOU.TYPE.SEND)),
+                        text: translate('iou.sendMoney'),
+                        onSelected: () =>
+                            interceptAnonymousUser(() =>
+                                IOU.startMoneyRequest(
+                                    CONST.IOU.TYPE.SEND,
+                                    // When starting to create a send money request from the global FAB, there is not an existing report yet. A random optimistic reportID is generated and used
+                                    // for all of the routes in the creation flow.
+                                    ReportUtils.generateReportID(),
+                                ),
+                            ),
                     },
-                    ...[
-                        {
-                            icon: Expensicons.Task,
-                            text: props.translate('newTaskPage.assignTask'),
-                            onSelected: () => interceptAnonymousUser(() => Task.clearOutTaskInfoAndNavigate()),
-                        },
-                    ],
+                    ...(canUseTrackExpense
+                        ? [
+                              {
+                                  icon: Expensicons.DocumentPlus,
+                                  text: translate('iou.trackExpense'),
+                                  onSelected: () =>
+                                      interceptAnonymousUser(() =>
+                                          IOU.startMoneyRequest(
+                                              CONST.IOU.TYPE.TRACK_EXPENSE,
+                                              // When starting to create a track expense from the global FAB, we need to retrieve selfDM reportID.
+                                              // If it doesn't exist, we generate a random optimistic reportID and use it for all of the routes in the creation flow.
+                                              ReportUtils.findSelfDMReportID() || ReportUtils.generateReportID(),
+                                          ),
+                                      ),
+                              },
+                          ]
+                        : []),
+                    {
+                        icon: Expensicons.Task,
+                        text: translate('newTaskPage.assignTask'),
+                        onSelected: () => interceptAnonymousUser(() => Task.clearOutTaskInfoAndNavigate()),
+                    },
                     {
                         icon: Expensicons.Heart,
-                        text: props.translate('sidebarScreen.saveTheWorld'),
+                        text: translate('sidebarScreen.saveTheWorld'),
                         onSelected: () => interceptAnonymousUser(() => Navigation.navigate(ROUTES.TEACHERS_UNITE)),
                     },
-                    ...(!props.isLoading && !Policy.hasActiveFreePolicy(props.allPolicies)
+                    ...(!props.isLoading && !Policy.hasActiveChatEnabledPolicies(props.allPolicies)
                         ? [
                               {
                                   displayInDefaultIconColor: true,
@@ -204,28 +330,38 @@ function FloatingActionButtonAndPopover(props) {
                                   icon: Expensicons.NewWorkspace,
                                   iconWidth: 46,
                                   iconHeight: 40,
-                                  text: props.translate('workspace.new.newWorkspace'),
-                                  description: props.translate('workspace.new.getTheExpensifyCardAndMore'),
+                                  text: translate('workspace.new.newWorkspace'),
+                                  description: translate('workspace.new.getTheExpensifyCardAndMore'),
                                   onSelected: () => interceptAnonymousUser(() => App.createWorkspaceWithPolicyDraftAndNavigateToIt()),
+                              },
+                          ]
+                        : []),
+                    ...(props.quickAction && props.quickAction.action
+                        ? [
+                              {
+                                  icon: getQuickActionIcon(props.quickAction.action),
+                                  text: translate(getQuickActionTitle(props.quickAction.action)),
+                                  label: translate('quickAction.shortcut'),
+                                  isLabelHoverable: false,
+                                  floatRightAvatars: quickActionAvatars,
+                                  floatRightAvatarSize: CONST.AVATAR_SIZE.SMALL,
+                                  description: ReportUtils.getReportName(quickActionReport),
+                                  numberOfLinesDescription: 1,
+                                  onSelected: () => interceptAnonymousUser(() => navigateToQuickAction()),
+                                  shouldShowSubscriptRightAvatar: ReportUtils.isPolicyExpenseChat(quickActionReport),
                               },
                           ]
                         : []),
                 ]}
                 withoutOverlay
-                anchorRef={anchorRef}
+                anchorRef={fabRef}
             />
             <FloatingActionButton
-                accessibilityLabel={props.translate('sidebarScreen.fabNewChatExplained')}
+                accessibilityLabel={translate('sidebarScreen.fabNewChatExplained')}
                 role={CONST.ROLE.BUTTON}
                 isActive={isCreateMenuActive}
-                ref={anchorRef}
-                onPress={() => {
-                    if (isCreateMenuActive) {
-                        hideCreateMenu();
-                    } else {
-                        showCreateMenu();
-                    }
-                }}
+                ref={fabRef}
+                onPress={toggleCreateMenu}
             />
         </View>
     );
@@ -246,7 +382,6 @@ const FloatingActionButtonAndPopoverWithRef = forwardRef((props, ref) => (
 FloatingActionButtonAndPopoverWithRef.displayName = 'FloatingActionButtonAndPopoverWithRef';
 
 export default compose(
-    withLocalize,
     withNavigation,
     withNavigationFocus,
     withWindowDimensions,
@@ -257,6 +392,15 @@ export default compose(
         },
         isLoading: {
             key: ONYXKEYS.IS_LOADING_APP,
+        },
+        quickAction: {
+            key: ONYXKEYS.NVP_QUICK_ACTION_GLOBAL_CREATE,
+        },
+        personalDetails: {
+            key: ONYXKEYS.PERSONAL_DETAILS_LIST,
+        },
+        session: {
+            key: ONYXKEYS.SESSION,
         },
     }),
 )(FloatingActionButtonAndPopoverWithRef);

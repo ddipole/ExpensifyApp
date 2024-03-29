@@ -70,8 +70,14 @@ function BaseHTMLEngineProvider({textSelectable = false, children, enableExperim
                 mixedUAStyles: {whiteSpace: 'pre'},
                 contentModel: HTMLContentModel.block,
             }),
+            emoji: HTMLElementModel.fromCustomModel({tagName: 'emoji', contentModel: HTMLContentModel.textual}),
+            'completed-task': HTMLElementModel.fromCustomModel({
+                tagName: 'completed-task',
+                mixedUAStyles: {...styles.textSupporting, ...styles.textLineThrough},
+                contentModel: HTMLContentModel.textual,
+            }),
         }),
-        [styles.colorMuted, styles.formError, styles.mb0, styles.textLabelSupporting, styles.lh16],
+        [styles.formError, styles.mb0, styles.colorMuted, styles.textLabelSupporting, styles.lh16, styles.textSupporting, styles.textLineThrough],
     );
     /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -93,7 +99,6 @@ function BaseHTMLEngineProvider({textSelectable = false, children, enableExperim
             <RenderHTMLConfigProvider
                 defaultTextProps={defaultTextProps}
                 defaultViewProps={defaultViewProps}
-                // @ts-expect-error TODO: Remove this once HTMLRenderers (https://github.com/Expensify/App/issues/25154) is migrated to TypeScript.
                 renderers={htmlRenderers}
                 computeEmbeddedMaxWidth={HTMLEngineUtils.computeEmbeddedMaxWidth}
                 enableExperimentalBRCollapsing={enableExperimentalBRCollapsing}

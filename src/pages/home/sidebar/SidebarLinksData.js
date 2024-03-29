@@ -2,20 +2,25 @@ import {deepEqual} from 'fast-equals';
 import lodashGet from 'lodash/get';
 import lodashMap from 'lodash/map';
 import PropTypes from 'prop-types';
-import React, {useCallback, useMemo, useRef} from 'react';
+import React, {memo, useCallback, useEffect, useMemo, useRef} from 'react';
 import {View} from 'react-native';
 import {withOnyx} from 'react-native-onyx';
 import _ from 'underscore';
 import networkPropTypes from '@components/networkPropTypes';
 import {withNetwork} from '@components/OnyxProvider';
 import withCurrentReportID from '@components/withCurrentReportID';
+import withCurrentUserPersonalDetails, {withCurrentUserPersonalDetailsDefaultProps, withCurrentUserPersonalDetailsPropTypes} from '@components/withCurrentUserPersonalDetails';
 import withNavigationFocus from '@components/withNavigationFocus';
+import useActiveWorkspace from '@hooks/useActiveWorkspace';
 import useLocalize from '@hooks/useLocalize';
 import usePrevious from '@hooks/usePrevious';
 import useThemeStyles from '@hooks/useThemeStyles';
 import compose from '@libs/compose';
+import {getPolicyMembersByIdWithoutCurrentUser} from '@libs/PolicyUtils';
+import * as ReportUtils from '@libs/ReportUtils';
 import SidebarUtils from '@libs/SidebarUtils';
 import reportPropTypes from '@pages/reportPropTypes';
+import * as Policy from '@userActions/Policy';
 import CONST from '@src/CONST';
 import ONYXKEYS from '@src/ONYXKEYS';
 import SidebarLinks, {basePropTypes} from './SidebarLinks';
@@ -60,6 +65,9 @@ const propTypes = {
     // eslint-disable-next-line react/forbid-prop-types
     policies: PropTypes.object,
 
+    // eslint-disable-next-line react/forbid-prop-types
+    policyMembers: PropTypes.object,
+
     /** All of the transaction violations */
     transactionViolations: PropTypes.shape({
         violations: PropTypes.arrayOf(
@@ -84,27 +92,58 @@ const propTypes = {
             }),
         ),
     }),
+
+    ...withCurrentUserPersonalDetailsPropTypes,
 };
 
 const defaultProps = {
     chatReports: {},
-    allReportActions: {},
     isLoadingApp: true,
     priorityMode: CONST.PRIORITY_MODE.DEFAULT,
     betas: [],
     policies: {},
+    policyMembers: {},
     transactionViolations: {},
+    allReportActions: {},
+    ...withCurrentUserPersonalDetailsDefaultProps,
 };
 
-function SidebarLinksData({isFocused, allReportActions, betas, chatReports, currentReportID, insets, isLoadingApp, onLinkClick, policies, priorityMode, network, transactionViolations}) {
+function SidebarLinksData({
+    isFocused,
+    allReportActions,
+    betas,
+    chatReports,
+    currentReportID,
+    insets,
+    isLoadingApp,
+    onLinkClick,
+    policies,
+    priorityMode,
+    network,
+    policyMembers,
+    transactionViolations,
+    currentUserPersonalDetails,
+}) {
     const styles = useThemeStyles();
+    const {activeWorkspaceID} = useActiveWorkspace();
     const {translate} = useLocalize();
     const prevPriorityMode = usePrevious(priorityMode);
 
+    const policyMemberAccountIDs = getPolicyMembersByIdWithoutCurrentUser(policyMembers, activeWorkspaceID, currentUserPersonalDetails.accountID);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => Policy.openWorkspace(activeWorkspaceID, policyMemberAccountIDs), [activeWorkspaceID]);
+
     const reportIDsRef = useRef(null);
     const isLoading = isLoadingApp;
+
+    const optionItemsMemoized = useMemo(
+        () => SidebarUtils.getOrderedReportIDs(null, chatReports, betas, policies, priorityMode, allReportActions, transactionViolations, activeWorkspaceID, policyMemberAccountIDs),
+        [chatReports, betas, policies, priorityMode, allReportActions, transactionViolations, activeWorkspaceID, policyMemberAccountIDs],
+    );
+
     const optionListItems = useMemo(() => {
-        const reportIDs = SidebarUtils.getOrderedReportIDs(null, chatReports, betas, policies, priorityMode, allReportActions, transactionViolations);
+        const reportIDs = optionItemsMemoized;
 
         if (deepEqual(reportIDsRef.current, reportIDs)) {
             return reportIDsRef.current;
@@ -117,7 +156,7 @@ function SidebarLinksData({isFocused, allReportActions, betas, chatReports, curr
             reportIDsRef.current = reportIDs;
         }
         return reportIDsRef.current || [];
-    }, [allReportActions, betas, chatReports, policies, prevPriorityMode, priorityMode, isLoading, network.isOffline, transactionViolations]);
+    }, [optionItemsMemoized, priorityMode, isLoading, network.isOffline, prevPriorityMode]);
 
     // We need to make sure the current report is in the list of reports, but we do not want
     // to have to re-generate the list every time the currentReportID changes. To do that
@@ -126,10 +165,20 @@ function SidebarLinksData({isFocused, allReportActions, betas, chatReports, curr
     // case we re-generate the list a 2nd time with the current report included.
     const optionListItemsWithCurrentReport = useMemo(() => {
         if (currentReportID && !_.contains(optionListItems, currentReportID)) {
-            return SidebarUtils.getOrderedReportIDs(currentReportID, chatReports, betas, policies, priorityMode, allReportActions, transactionViolations);
+            return SidebarUtils.getOrderedReportIDs(
+                currentReportID,
+                chatReports,
+                betas,
+                policies,
+                priorityMode,
+                allReportActions,
+                transactionViolations,
+                activeWorkspaceID,
+                policyMemberAccountIDs,
+            );
         }
         return optionListItems;
-    }, [currentReportID, optionListItems, chatReports, betas, policies, priorityMode, allReportActions, transactionViolations]);
+    }, [currentReportID, optionListItems, chatReports, betas, policies, priorityMode, allReportActions, transactionViolations, activeWorkspaceID, policyMemberAccountIDs]);
 
     const currentReportIDRef = useRef(currentReportID);
     currentReportIDRef.current = currentReportID;
@@ -150,6 +199,7 @@ function SidebarLinksData({isFocused, allReportActions, betas, chatReports, curr
                 isActiveReport={isActiveReport}
                 isLoading={isLoading}
                 optionListItems={optionListItemsWithCurrentReport}
+                activeWorkspaceID={activeWorkspaceID}
             />
         </View>
     );
@@ -172,6 +222,7 @@ const chatReportSelector = (report) =>
         hasDraft: report.hasDraft,
         isPinned: report.isPinned,
         isHidden: report.isHidden,
+        notificationPreference: report.notificationPreference,
         errorFields: {
             addWorkspaceRoom: report.errorFields && report.errorFields.addWorkspaceRoom,
         },
@@ -201,6 +252,7 @@ const chatReportSelector = (report) =>
         parentReportActionID: report.parentReportActionID,
         parentReportID: report.parentReportID,
         isDeletedParentAction: report.isDeletedParentAction,
+        isUnreadWithMention: ReportUtils.isUnreadWithMention(report),
     };
 
 /**
@@ -210,7 +262,7 @@ const chatReportSelector = (report) =>
 const reportActionsSelector = (reportActions) =>
     reportActions &&
     lodashMap(reportActions, (reportAction) => {
-        const {reportActionID, parentReportActionID, actionName, errors = []} = reportAction;
+        const {reportActionID, parentReportActionID, actionName, errors = [], originalMessage} = reportAction;
         const decision = lodashGet(reportAction, 'message[0].moderationDecision.decision');
 
         return {
@@ -223,6 +275,7 @@ const reportActionsSelector = (reportActions) =>
                     moderationDecision: {decision},
                 },
             ],
+            originalMessage,
         };
     });
 
@@ -239,6 +292,7 @@ const policySelector = (policy) =>
 
 export default compose(
     withCurrentReportID,
+    withCurrentUserPersonalDetails,
     withNavigationFocus,
     withNetwork(),
     withOnyx({
@@ -268,9 +322,35 @@ export default compose(
             selector: policySelector,
             initialValue: {},
         },
+        policyMembers: {
+            key: ONYXKEYS.COLLECTION.POLICY_MEMBERS,
+        },
         transactionViolations: {
             key: ONYXKEYS.COLLECTION.TRANSACTION_VIOLATIONS,
             initialValue: {},
         },
     }),
-)(SidebarLinksData);
+)(
+    /* 
+        While working on audit on the App Start App metric we noticed that by memoizing SidebarLinksData we can avoid 2 additional run of getOrderedReportIDs.
+        With that we can reduce app start up time by ~2s on heavy account.
+        More details - https://github.com/Expensify/App/issues/35234#issuecomment-1926914534
+    */
+    memo(
+        SidebarLinksData,
+        (prevProps, nextProps) =>
+            _.isEqual(prevProps.chatReports, nextProps.chatReports) &&
+            _.isEqual(prevProps.allReportActions, nextProps.allReportActions) &&
+            prevProps.isLoadingApp === nextProps.isLoadingApp &&
+            prevProps.priorityMode === nextProps.priorityMode &&
+            _.isEqual(prevProps.betas, nextProps.betas) &&
+            _.isEqual(prevProps.policies, nextProps.policies) &&
+            prevProps.network.isOffline === nextProps.network.isOffline &&
+            _.isEqual(prevProps.insets, nextProps.insets) &&
+            prevProps.onLinkClick === nextProps.onLinkClick &&
+            _.isEqual(prevProps.policyMembers, nextProps.policyMembers) &&
+            _.isEqual(prevProps.transactionViolations, nextProps.transactionViolations) &&
+            _.isEqual(prevProps.currentUserPersonalDetails, nextProps.currentUserPersonalDetails) &&
+            prevProps.currentReportID === nextProps.currentReportID,
+    ),
+);
